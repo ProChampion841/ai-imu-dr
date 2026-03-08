@@ -455,10 +455,10 @@ def test_filter(args, dataset):
 
 
 class KITTIArgs():
-        path_data_base = "/media/mines/46230797-4d43-4860-9b76-ce35e699ea47/KITTI/raw"
-        path_data_save = "../data"
-        path_results = "../results"
-        path_temp = "../temp"
+        path_data_base = "../raw_data"
+        path_data_save = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+        path_results = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "results"))
+        path_temp = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp"))
 
         epochs = 400
         seq_dim = 6000
@@ -470,9 +470,9 @@ class KITTIArgs():
 
         # choose what to do
         read_data = 0
-        train_filter = 0
-        test_filter = 1
-        results_filter = 1
+        train_filter = 1
+        test_filter = 0
+        results_filter = 0
         dataset_class = KITTIDataset
         parameter_class = KITTIParameters
 
@@ -480,5 +480,5 @@ class KITTIArgs():
 if __name__ == '__main__':
     args = KITTIArgs()
     dataset = KITTIDataset(args)
-    launch(KITTIArgs)
+    launch(args)
 

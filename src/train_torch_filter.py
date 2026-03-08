@@ -105,26 +105,28 @@ def prepare_loss_data(args, dataset):
     for dataset_name, Ns in dataset.datasets_train_filter.items():
         t, ang_gt, p_gt, v_gt, u = prepare_data(args, dataset, dataset_name, 0)
         p_gt = p_gt.double()
-        Rot_gt = torch.zeros(Ns[1], 3, 3)
-        for k in range(Ns[1]):
+        N_end = Ns[1] if Ns[1] is not None else len(ang_gt)
+        Rot_gt = torch.zeros(N_end, 3, 3)
+        for k in range(N_end):
             ang_k = ang_gt[k]
             Rot_gt[k] = TORCHIEKF.from_rpy(ang_k[0], ang_k[1], ang_k[2]).double()
-        list_rpe[dataset_name] = compute_delta_p(Rot_gt[:Ns[1]], p_gt[:Ns[1]])
+        list_rpe[dataset_name] = compute_delta_p(Rot_gt[:N_end], p_gt[:N_end])
 
     list_rpe_validation = {}
     for dataset_name, Ns in dataset.datasets_validatation_filter.items():
         t, ang_gt, p_gt, v_gt, u = prepare_data(args, dataset, dataset_name, 0)
         p_gt = p_gt.double()
-        Rot_gt = torch.zeros(Ns[1], 3, 3)
-        for k in range(Ns[1]):
+        N_end = Ns[1] if Ns[1] is not None else len(ang_gt)
+        Rot_gt = torch.zeros(N_end, 3, 3)
+        for k in range(N_end):
             ang_k = ang_gt[k]
             Rot_gt[k] = TORCHIEKF.from_rpy(ang_k[0], ang_k[1], ang_k[2]).double()
-        list_rpe_validation[dataset_name] = compute_delta_p(Rot_gt[:Ns[1]], p_gt[:Ns[1]])
+        list_rpe_validation[dataset_name] = compute_delta_p(Rot_gt[:N_end], p_gt[:N_end])
     
     list_rpe_ = copy.deepcopy(list_rpe)
     dataset.list_rpe = {}
     for dataset_name, rpe in list_rpe_.items():
-        if len(rpe[0]) is not 0:
+        if len(rpe[0]) != 0:
             dataset.list_rpe[dataset_name] = list_rpe[dataset_name]
         else:
             dataset.datasets_train_filter.pop(dataset_name)
@@ -134,7 +136,7 @@ def prepare_loss_data(args, dataset):
     list_rpe_validation_ = copy.deepcopy(list_rpe_validation)
     dataset.list_rpe_validation = {}
     for dataset_name, rpe in list_rpe_validation_.items():
-        if len(rpe[0]) is not 0:
+        if len(rpe[0]) != 0:
             dataset.list_rpe_validation[dataset_name] = list_rpe_validation[dataset_name]
         else:
             dataset.datasets_validatation_filter.pop(dataset_name)
@@ -156,7 +158,7 @@ def train_loop(args, dataset, epoch, iekf, optimizer, seq_dim):
         loss = mini_batch_step(dataset, dataset_name, iekf,
                                dataset.list_rpe[dataset_name], t, ang_gt, p_gt, v_gt, u, N0)
 
-        if loss is -1 or torch.isnan(loss):
+        if loss == -1 or torch.isnan(loss):
             cprint("{} loss is invalid".format(i), 'yellow')
             continue
         elif loss > max_loss:
@@ -262,7 +264,7 @@ def precompute_lost(Rot, p, list_rpe, N0):
     delta_p_gt = delta_p_gt[idxs]
     idxs_end_bis = idxs_end[idxs]
     idxs_0_bis = idxs_0[idxs]
-    if len(idxs_0_bis) is 0: 
+    if len(idxs_0_bis) == 0: 
         return None, None     
     else:
         delta_p = Rot_10_Hz[idxs_0_bis].transpose(-1, -2).matmul(
